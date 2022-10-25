@@ -48,3 +48,21 @@ Thumbs.db
 *.mov
 *.wmv
 
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+\vendor
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+vendor
