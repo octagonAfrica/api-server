@@ -62,7 +62,7 @@ class LoginController extends Controller
                         "exp" => strtotime('+1 hour')          //token session is valid/expires in an hour
 
                     ];
-                    $key = '4fdb00b053be01b3875d8538e8c6062c'; // Move to .env
+                    $key = env('JWT_KEY');
                     $jwt = JWT::encode($data, $key, 'HS256');
                     // insert Audit Trail -> successful login
                     DB::connection('mydb_sqlsrv')->insert('INSERT INTO audit_trail_general_tb(audit_date_time,audit_scheme_code,audit_username,audit_fullnames,audit_activity,audit_description) values (?,?,?,?,?,?)', [date("Y-m-d H:i:s"), "All", $user->user_username, $user->user_full_names, "Login", "Success"]);
