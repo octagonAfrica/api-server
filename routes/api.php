@@ -27,3 +27,4 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/login/verification', [LoginController::class, 'sendLoginVerification']);
 Route::post('/login/otp', [LoginController::class, 'otp']);
 Route::post('/password_reset', [ResetPasswordController::class, 'resetPassword']);
+Route::put('/new_password', [ResetPasswordController::class, 'newPassword']);

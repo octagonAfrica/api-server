@@ -53,4 +53,51 @@ class ResetPasswordController extends Controller
             }
         }
     }
+
+    // Update password
+    public function newPassword(Request $request)
+    {
+        $code = $request['code'];
+        $password = $request['password'];
+
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        $check_code = DB::connection('mydb_sqlsrv')->select("SELECT * FROM tokens where token_key = '$code'");
+
+        if (count($check_code) > 0) {
+            $code_expiry = DB::connection('mydb_sqlsrv')->select("SELECT TOP 1 * FROM tokens where token_key = '$code' AND (DATEDIFF(second, expire_date, GETDATE()) / 3600.0)<=24");
+            if (count($code_expiry)) {
+                $data = $code_expiry[0];
+                $userid = $data->user_id;
+                $update_password = DB::connection('mydb_sqlsrv')->table('sys_users_tb')
+                    ->where('user_id', $userid)
+                    ->update(['user_enc_pwd' => $hashed_password]);
+
+                if ($update_password) {
+                    return response()->json([
+
+                        'operation' => 'success',
+                        'message' => 'Password reset succesfully'
+                    ], 200);
+                } else {
+                    return response()->json([
+
+                        'operation' => 'fail',
+                        'message' => 'Failed to update Password. Check your post variables', 'error' => $update_password
+
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'operation' =>  'fail',
+                    'message' =>  'Password reset link has expired'
+                ], 401);
+            }
+        } else {
+            return response()->json([
+                'operation' =>  'fail',
+                'message' =>  'A record with that code does not exist in the database. Check your variables and try again'
+            ], 402);
+        }
+    }
 }
