@@ -83,7 +83,8 @@ class ResetPasswordController extends Controller
                     return response()->json([
 
                         'operation' => 'fail',
-                        'message' => 'Failed to update Password. Check your post variables', 'error' => $update_password
+                        'message' => 'Failed to update Password. Check your post variables',
+                        'error' => $update_password
 
                     ], 403);
                 }

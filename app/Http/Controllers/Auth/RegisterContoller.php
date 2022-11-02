@@ -21,6 +21,7 @@ class RegisterContoller extends Controller
             'ID' => 'required',
             'email' => 'required',
             'password' => 'required|min:6',
+            'phonenumber' => 'regex:/^(\+254|254|0)[1-9]\d{8}$/'
         ];
 
         // Validate request
@@ -60,7 +61,18 @@ class RegisterContoller extends Controller
                     ], 401
                 );
             } else {
-                // Add user    
+
+                $pattern = "/^(\+254|254|0)[1-9]\d{8}$/";
+                $kk = preg_match($pattern,$phone_number,$matches);
+                // Add user
+                if ($kk && $matches[1] === "254") {
+                    $new_number = substr($phone_number, 3);
+                    $phone_number = "0$new_number";  
+
+                } elseif ($kk && $matches[1] === "+254") {
+                    $new_number = substr($phone_number, 4);
+                    $phone_number = "0$new_number";   
+                }   
                 $add_user = DB::connection('mydb_sqlsrv')->insert('INSERT INTO sys_users_tb(user_username,user_delagate_owner,user_enc_pwd,user_country,user_company,user_active,user_full_names,user_email,user_mobile,user_phone,user_national_id,user_role_id) values (?,?,?,?,?,?,?,?,?,?,?,?)', [$username, "", $encryptedPassword, 'Kenya', '', 1, $fullnames, $email, $phone_number, $phone_number, $ID, 100]);
                 if ($add_user) {
                     $mailData = [
