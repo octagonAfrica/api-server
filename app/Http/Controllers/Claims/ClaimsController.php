@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Claims;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Stmt\TryCatch;
 
 class ClaimsController extends Controller
 {
@@ -46,7 +47,7 @@ class ClaimsController extends Controller
         // WHERE 
         //     A.ClientID = '$ClientID'";
         //     }
-            //validate leads
+        //validate leads
         //     $sql2 = "SELECT 
         //     *
         // FROM MedFamMembers
@@ -56,7 +57,7 @@ class ClaimsController extends Controller
         //     $beneficiaries = DB::connection('sqlsrv')->select($sql2);
         //         return $beneficiaries;
         //     } 
-                    
+
         //     $sql = "SELECT 
         //     claimant,
         //     A.ID,
@@ -81,38 +82,69 @@ class ClaimsController extends Controller
         //     ORDER BY A.ID desc
         //     OFFSET " . $start . " ROWS
         //     FETCH NEXT " . $limit . " ROWS ONLY";
-             
+
         //         $Claims = DB::connection('sqlsrv')->select($sql);
         //     return $Claims;
         //     }
-                
-        
-            
-    //     } else {
 
 
-    
 
-    //     // $Claims = $db_birthmark->dbSelectRows($sql);
+        //     } else {
 
-    //     if (count($Claims) > 0) {
 
-    //         $payload = [
-    //             'success' =>  true,
-    //             'message' =>  'Successfully retrieved',
-    //             'data' => [
-    //                 'Claim' => $Claims,
-    //                 // 'Beneficiary' => $beneficiaries
-    //             ],
-    //             // 'total' => $db_birthmark->getRowCount()
-    //         ];
-    //     } else {
-    //         $payload = array(
-    //             'success' =>  false,
-    //             'message' =>  'No claim found'
-    //         );
-    //     }
 
-    //     return $payload;
+
+        //     // $Claims = $db_birthmark->dbSelectRows($sql);
+
+        //     if (count($Claims) > 0) {
+
+        //         $payload = [
+        //             'success' =>  true,
+        //             'message' =>  'Successfully retrieved',
+        //             'data' => [
+        //                 'Claim' => $Claims,
+        //                 // 'Beneficiary' => $beneficiaries
+        //             ],
+        //             // 'total' => $db_birthmark->getRowCount()
+        //         ];
+        //     } else {
+        //         $payload = array(
+        //             'success' =>  false,
+        //             'message' =>  'No claim found'
+        //         );
+        //     }
+
+        // return "Middleware Tes";
+
+    }
+    //Get Cliams as per Client
+    public function clientClaims(Request $request)
+    {
+        if (!$request['ClientID']) {
+
+            $payload = [
+                'success' =>  false,
+                'message' =>  'Insert Client ID'
+            ];
+        } else {
+            $clientID = filter_var(trim($request['ClientID']), FILTER_SANITIZE_STRING);
+            try {
+                $client_Cliams = DB::select("SELECT * FROM ClaimRegister WHERE ClientID = '$clientID'");
+                $payload = [
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Claims retrieved successfully',
+                    'total' => count($client_Cliams),
+                    'data' => $client_Cliams
+                ];
+            } catch (\Throwable $th) {
+                $payload = response()->json([
+                    'status' => 401,
+                    'success' => false,
+                    'message' => $th
+                ]);
+            }
+        }
+        return $payload;
     }
 }
