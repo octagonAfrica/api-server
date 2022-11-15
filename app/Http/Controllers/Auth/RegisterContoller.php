@@ -28,10 +28,10 @@ class RegisterContoller extends Controller
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return response()->json(
-                [
+                [   'status' => 400,
                     'success' => false,
                     'message' => "User registration failed. Please input Required Fields"
-                ],401
+                ],400
             );
         } else {
 
@@ -55,10 +55,10 @@ class RegisterContoller extends Controller
 
             if ($user_exist) {
                 return response()->json(
-                    [
+                    [   'status' => 400,
                         'success' => false,
-                        'message' => 'failed to register user because a user with the same username already exists. Send a PATCH request to edit client details'
-                    ], 401
+                        'message' => 'User with the same username already exists.'
+                    ], 400
                 );
             } else {
 
@@ -85,14 +85,16 @@ class RegisterContoller extends Controller
                     // Send Email to new user, username and Password
                     Mail::to($email)->send(new RegistrationMail($mailData));
                     return response()->json(
-                        [
+                        [   
+                            'status' => 200,
                             'operation' =>  'success',
                             'message' =>  "User registered successfully, Login details sent to '$email'"
                         ], 200
                     );
                 } else
                     return response()->json(
-                        [
+                        [   
+                            'status' => 500,
                             'success' => false,
                             'message' => 'Internal Server Error '
                         ],500
