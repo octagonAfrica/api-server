@@ -14,12 +14,12 @@ class ResetPasswordController extends Controller
     public function resetPassword(Request $request)
     {
         $email = $request['email'];
-        if(!$email || empty($email)){
+        if (!$email || empty($email)) {
             return response()->json([
-                    'status' => 400,
-                    'operation' =>  'fail',
-                    'message' =>  'Email required.'
-                ], 400);
+                'status' => 400,
+                'operation' =>  'fail',
+                'message' =>  'Email required.'
+            ], 400);
         }
 
         $token = openssl_random_pseudo_bytes(16);
@@ -44,7 +44,8 @@ class ResetPasswordController extends Controller
                 // Send verification Email with token
                 Mail::to($email)->send(new PasswordResetMail($mailData));
                 return response()->json(
-                    [   'status' => 200,
+                    [
+                        'status' => 200,
                         'operation' =>  'success',
                         'message' =>  "Password reset link for $name sent successfully to $email"
                     ],
@@ -52,7 +53,8 @@ class ResetPasswordController extends Controller
                 );
             } catch (\Throwable $th) {
                 return response()->json(
-                    [   'status' => 400,
+                    [
+                        'status' => 400,
                         'operation' =>  'fail',
                         'message' =>  'Unable to send password reset link'
                     ],
@@ -63,12 +65,12 @@ class ResetPasswordController extends Controller
     }
 
     // Update password
-    public function newPassword(Request $request)
+    public function updatePasswordWithCode(Request $request)
     {
         $code = $request['code'];
         $password = $request['password'];
 
-        if(empty($code) || empty($password) || !$code || !$password){
+        if (empty($code) || empty($password) || !$code || !$password) {
             return response()->json([
                 'status' => 400,
                 'operation' =>  'fail',
@@ -90,10 +92,10 @@ class ResetPasswordController extends Controller
 
                 if ($update_password) {
                     return response()->json([
-                        'statu' => 204,
+                        'statu' => 200,
                         'operation' => 'success',
                         'message' => 'Password reset succesfully'
-                    ], 204);
+                    ], 200);
                 } else {
                     return response()->json([
                         'status' => 404,
@@ -116,6 +118,54 @@ class ResetPasswordController extends Controller
                 'operation' =>  'fail',
                 'message' =>  'A record with the code does not exist.'
             ], 404);
+        }
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $password = $request['password'];
+        $userid = $request['user_id'];
+
+        if (!$password || empty($password) || !$userid || empty($userid)) {
+            return response()->json([
+                'status' => 400,
+                'success' => false,
+                'message' => 'New Password/user_id  not privded.'
+            ], 400);
+        }
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        try {
+            $update_password = DB::connection('mydb_sqlsrv')->table('sys_users_tb')
+                ->where('user_id', $userid)
+                ->update(['user_enc_pwd' => $hashed_password]);
+            if ($update_password) {
+                return response()->json(
+                    [
+                        'status' => 200,
+                        'success' => true,
+                        'message' => 'Password updated successfully.'
+                    ],
+                    200
+                );
+            } else {
+                return response()->json(
+                [
+                    'status' => 404,
+                    'success' => false,
+                    'message' => 'User Not Found.'
+                ],
+                404
+            );   
+            }
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'status' => 400,
+                    'success' => false,
+                    'message' => $th
+                ],
+                400
+            );
         }
     }
 }
