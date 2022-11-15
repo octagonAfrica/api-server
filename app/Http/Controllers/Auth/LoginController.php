@@ -26,11 +26,11 @@ class LoginController extends Controller
         $pattern = "/^(\+254|254|0)[1-9]\d{8}$/";
         if ($validator->fails()) {
             return response()->json(
-                [
+                [   'status' => 400,
                     'success' => false,
                     'message' => "Login failed. Username/Email/Phone number required"
                 ],
-                401
+                400
             );
         } else {
             // Username is phone number
@@ -163,7 +163,7 @@ class LoginController extends Controller
                         DB::connection('mydb_sqlsrv')->insert('INSERT INTO [MYDB].[dbo].[otp_expiry](otp,user_id,is_expired,created_at) values (?,?,?,?)', [$otp, $user->user_id, 0, date("Y-m-d H:i:s")]);
 
                         return response()->json(
-                            [
+                            [   'status' => 200,
                                 'success' =>  true,
                                 'message' =>  'Successfull verification',
                                 'data' => $data,
@@ -176,20 +176,20 @@ class LoginController extends Controller
                         DB::connection('mydb_sqlsrv')->insert('INSERT INTO audit_trail_general_tb(audit_date_time,audit_scheme_code,audit_username,audit_fullnames,audit_activity,audit_description) values (?,?,?,?,?,?)', [date("Y-m-d H:i:s"), "All", $user->user_username, $user->user_full_names, "Login", "Failed"]);
                         //wrong password
                         return response()->json(
-                            [
+                            [   'status' => 400,
                                 'success' => false,
                                 'message' => "Authentication failed. Incorrect password or username. Access denied."
                             ],
-                            401
+                            400
                         );
                     }
                 } else {
                     return response()->json(
-                        [
+                        [   'status' => 400,
                             'success' => false,
                             'message' => "Authentication failed. Username provided was not found in the database"
                         ],
-                        401
+                        400
                     );
                 }
             }
@@ -278,12 +278,13 @@ class LoginController extends Controller
                             DB::connection('mydb_sqlsrv')->insert('INSERT INTO [MYDB].[dbo].[otp_expiry](otp,user_id,is_expired,created_at) values (?,?,?,?)', [$otp, $user->user_id, 0, date("Y-m-d H:i:s")]);
 
                             return response()->json(
-                                [
+                                [   
+                                    'status' => 200,
                                     'success' =>  true,
                                     'message' =>  "Successfull verification, otp sent to $username",
                                     // 'data' => $data,
                                     'token' => $jwt,
-                                    'status' => $get_sms_status
+                                    'sms status' => $get_sms_status
                                 ],
                                 200
                             );
@@ -292,7 +293,8 @@ class LoginController extends Controller
                             DB::connection('mydb_sqlsrv')->insert('INSERT INTO audit_trail_general_tb(audit_date_time,audit_scheme_code,audit_username,audit_fullnames,audit_activity,audit_description) values (?,?,?,?,?,?)', [date("Y-m-d H:i:s"), "All", $user->user_username, $user->user_full_names, "Login", "Failed"]);
                             //wrong password
                             return response()->json(
-                                [
+                                [   
+                                    'status' => 401,
                                     'success' => false,
                                     'message' => "Authentication failed. Incorrect password or username. Access denied."
                                 ],
@@ -301,18 +303,20 @@ class LoginController extends Controller
                         }
                     } else {
                         return response()->json(
-                            [
+                            [   
+                                'status' => 404,
                                 'success' => false,
                                 'message' => "Authentication failed. Username provided was not found in the database"
                             ],
-                            401
+                            404
                         );
                     }
                 } else {
                     return response()->json([
+                        'status' => 400,
                         'operation' => false,
                         'message' => 'Invalid Phone number'
-                    ]);
+                    ],400);
                 }
             }
             // username is username generated during registration
@@ -357,7 +361,8 @@ class LoginController extends Controller
                         DB::connection('mydb_sqlsrv')->insert('INSERT INTO [MYDB].[dbo].[otp_expiry](otp,user_id,is_expired,created_at) values (?,?,?,?)', [$otp, $user->user_id, 0, date("Y-m-d H:i:s")]);
 
                         return response()->json(
-                            [
+                            [   
+                                'status' => 200,
                                 'success' =>  true,
                                 'message' =>  'Successfull verification',
                                 'data' => $data,
@@ -370,7 +375,8 @@ class LoginController extends Controller
                         DB::connection('mydb_sqlsrv')->insert('INSERT INTO audit_trail_general_tb(audit_date_time,audit_scheme_code,audit_username,audit_fullnames,audit_activity,audit_description) values (?,?,?,?,?,?)', [date("Y-m-d H:i:s"), "All", $user->user_username, $user->user_full_names, "Login", "Failed"]);
                         //wrong password
                         return response()->json(
-                            [
+                            [   
+                                'status' => 401,
                                 'success' => false,
                                 'message' => "Authentication failed. Incorrect password or username. Access denied."
                             ],
@@ -379,7 +385,8 @@ class LoginController extends Controller
                     }
                 } else {
                     return response()->json(
-                        [
+                        [   
+                            'status' => 401,
                             'success' => false,
                             'message' => "Authentication failed. Username provided was not found in the database"
                         ],
@@ -421,7 +428,8 @@ class LoginController extends Controller
                 );
             } catch (\Throwable $th) {
                 return response()->json(
-                    [
+                    [   
+                        'status' => 400,
                         'operation' =>  'false',
                         'message' =>  "OTP verification not sent"
                     ],
@@ -459,11 +467,12 @@ class LoginController extends Controller
             curl_close($ch);
         }
         return response()->json(
-            [
+            [   
+                'status' => 200,
                 'operation' =>  'success',
                 'message' =>  "OTP verification code sent to '$phone'",
-                'status' => $get_sms_status
-            ],
+                'sms status' => $get_sms_status
+            ],200
         );
     }
 
@@ -475,7 +484,7 @@ class LoginController extends Controller
         $sql_check_code = DB::connection('mydb_sqlsrv')->select("SELECT * FROM otp_expiry WHERE otp='$code' AND is_expired!=1 AND (DATEDIFF(second, created_at, GETDATE()) / 3600.0)<=24");
         if (empty($sql_check_code)) {
             return response()->json([
-
+                'status' => 400,
                 'operation' =>  'fail',
                 'message' =>  'Invalid otp'
             ], 400);
@@ -501,6 +510,7 @@ class LoginController extends Controller
             'user_role_id' =>  $userData->user_role_id
         ];
         return response([
+            'status' => 200,
             'operation' =>  'success',
             'message' =>  'Successful verification',
             'data' => $payload

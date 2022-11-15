@@ -7,12 +7,20 @@ use App\Mail\PasswordResetMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Code;
 
 class ResetPasswordController extends Controller
 {
     public function resetPassword(Request $request)
     {
         $email = $request['email'];
+        if(!$email || empty($email)){
+            return response()->json([
+                    'status' => 400,
+                    'operation' =>  'fail',
+                    'message' =>  'Email required.'
+                ], 400);
+        }
 
         $token = openssl_random_pseudo_bytes(16);
         //Convert the binary data into hexadecimal representation.
@@ -36,7 +44,7 @@ class ResetPasswordController extends Controller
                 // Send verification Email with token
                 Mail::to($email)->send(new PasswordResetMail($mailData));
                 return response()->json(
-                    [
+                    [   'status' => 200,
                         'operation' =>  'success',
                         'message' =>  "Password reset link for $name sent successfully to $email"
                     ],
@@ -44,7 +52,7 @@ class ResetPasswordController extends Controller
                 );
             } catch (\Throwable $th) {
                 return response()->json(
-                    [
+                    [   'status' => 400,
                         'operation' =>  'fail',
                         'message' =>  'Unable to send password reset link'
                     ],
@@ -60,6 +68,13 @@ class ResetPasswordController extends Controller
         $code = $request['code'];
         $password = $request['password'];
 
+        if(empty($code) || empty($password) || !$code || !$password){
+            return response()->json([
+                'status' => 400,
+                'operation' =>  'fail',
+                'message' =>  'Code and password not provided.'
+            ], 400);
+        }
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
         $check_code = DB::connection('mydb_sqlsrv')->select("SELECT * FROM tokens where token_key = '$code'");
@@ -75,30 +90,32 @@ class ResetPasswordController extends Controller
 
                 if ($update_password) {
                     return response()->json([
-
+                        'statu' => 204,
                         'operation' => 'success',
                         'message' => 'Password reset succesfully'
-                    ], 200);
+                    ], 204);
                 } else {
                     return response()->json([
-
+                        'status' => 404,
                         'operation' => 'fail',
-                        'message' => 'Failed to update Password. Check your post variables',
+                        'message' => 'Failed to update Password.',
                         'error' => $update_password
 
-                    ], 403);
+                    ], 404);
                 }
             } else {
                 return response()->json([
+                    'status' => 404,
                     'operation' =>  'fail',
                     'message' =>  'Password reset link has expired'
-                ], 401);
+                ], 404);
             }
         } else {
             return response()->json([
+                'status' => 404,
                 'operation' =>  'fail',
-                'message' =>  'A record with that code does not exist in the database. Check your variables and try again'
-            ], 402);
+                'message' =>  'A record with the code does not exist.'
+            ], 404);
         }
     }
 }

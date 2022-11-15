@@ -28,7 +28,7 @@ Route::post('/register', [RegisterContoller::class, 'registerUser']);
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/login/verification', [LoginController::class, 'sendLoginVerification']);
 Route::post('/login/otp', [LoginController::class, 'otp']);
-Route::post('/password_reset', [ResetPasswordController::class, 'resetPassword']);
+Route::post('/password_reset/link', [ResetPasswordController::class, 'resetPassword']);
 Route::put('/new_password', [ResetPasswordController::class, 'newPassword']);
 Route::get('/claims', [ClaimsController::class, 'getClaims']);
 Route::get('/claims/client', [ClaimsController::class, 'clientClaims']);
