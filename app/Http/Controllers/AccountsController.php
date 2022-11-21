@@ -21,8 +21,11 @@ class AccountsController extends Controller
             ], 400);
         }
         try {
-            $members = DB::connection('mydb_sqlsrv')->select("SELECT * FROM members_tb WHERE m_id_number ='$id_number'");
-            $accounts = DB::select("SELECT * from Clients where UserID = '$user_id'");
+            $members = DB::connection('mydb_sqlsrv')->select("SELECT m_id,m_number,m_combined,m_name, m_id_number, m_pin, m_payment_mode FROM members_tb 
+            WHERE m_id_number = '$id_number'");
+            $accounts = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
+            from Clients C join InsuredItems I on C.ClientID = I.ClientID where C.UserID = '$user_id'");
+            
             if (!$accounts) {
                 $payload = response()->json([
                     'status' => 401,
@@ -32,11 +35,11 @@ class AccountsController extends Controller
                 $payload = response()->json([
                     'status' => 200,
                     'message' => 'Accounts retrieved Successfully',
-                    'total accounts' => count($accounts) + count($members),
-                    'total insurance accounts ' => count($accounts),
-                    'total member accounts' => count($members),
-                    'insurance accounts' => $accounts,
-                    'member accounts' => $members
+                    'Total number of accounts' => count($accounts) + count($members),
+                    'Insurance accounts ' => count($accounts),
+                    'Pensions accounts' => count($members),
+                    'Insurance accounts' => $accounts,
+                    'Pension accounts' => $members
                 ],200);
             };
         } catch (\Throwable $th) {
