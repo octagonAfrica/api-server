@@ -21,27 +21,25 @@ class AccountsController extends Controller
             ], 400);
         }
         try {
-            $members = DB::connection('mydb_sqlsrv')->select("SELECT m_id,m_number,m_combined,m_name, m_id_number, m_pin, m_payment_mode FROM members_tb 
+            $pension = DB::connection('mydb_sqlsrv')->select("SELECT m_id,m_number,m_combined,m_name, m_id_number, m_pin, m_payment_mode FROM members_tb 
             WHERE m_id_number = '$id_number'");
-            $accounts = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
+            $insurance = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
             from Clients C join InsuredItems I on C.ClientID = I.ClientID where C.UserID = '$user_id'");
             
-            if (!$accounts) {
-                $payload = response()->json([
-                    'status' => 401,
-                    'message' => 'No Accounts Found'
-                ], 401);
-            } else {
+               $insurance_payload = [ 
+                'total_accounts' => count($insurance), 'data' => (object)$insurance,
+                ];
+                $pension_payload = [
+                    'total_accounts' => count($pension), 'data' => (object)$pension
+                ];
                 $payload = response()->json([
                     'status' => 200,
                     'message' => 'Accounts retrieved Successfully',
-                    'Total number of accounts' => count($accounts) + count($members),
-                    'Insurance accounts ' => count($accounts),
-                    'Pensions accounts' => count($members),
-                    'Insurance accounts' => $accounts,
-                    'Pension accounts' => $members
+                    'total_number_of_accounts' => count($insurance) + count($pension),
+                    'insurance' => (object)$insurance_payload,
+                    'pension' => (object)$pension_payload
                 ],200);
-            };
+
         } catch (\Throwable $th) {
             $payload = response()->json([
                 'status' => 400,
