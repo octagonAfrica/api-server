@@ -20,47 +20,138 @@ class ResetPasswordController extends Controller
                 'operation' =>  'fail',
                 'message' =>  'Email required.'
             ], 400);
-        }
+        } else if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $token = openssl_random_pseudo_bytes(16);
+            //Convert the binary data into hexadecimal representation.
+            $token = bin2hex($token);
 
-        $token = openssl_random_pseudo_bytes(16);
-        //Convert the binary data into hexadecimal representation.
-        $token = bin2hex($token);
+            $sql_user = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM sys_users_tb where user_email = '$email'");
+            if ($sql_user) {
+                $user = $sql_user[0];
+                $name = $user->user_full_names;
+                $user_id = $user->user_id;
+                $datecreated = date('Y-m-d H:i:s');
+                $expirydate = date('Y-m-d H:i:s', strtotime($datecreated . ' + 1 days'));
 
-        $sql_user = DB::connection('mydb_sqlsrv')->select("SELECT TOP 1 * FROM sys_users_tb where user_email = '$email'");
-
-        $user = $sql_user[0];
-        $name = $user->user_full_names;
-        $user_id = $user->user_id;
-        $datecreated = date('Y-m-d H:i:s');
-        $expirydate = date('Y-m-d H:i:s', strtotime($datecreated . ' + 1 days'));
-
-        $insert_token = DB::connection('mydb_sqlsrv')->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date) values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
-        if ($insert_token) {
-            $mailData = [
-                'token' => $token,
-                'name' => $name
-            ];
-            try {
-                // Send verification Email with token
-                Mail::to($email)->send(new PasswordResetMail($mailData));
-                return response()->json(
-                    [
-                        'status' => 200,
-                        'operation' =>  'success',
-                        'message' =>  "Password reset link for $name sent successfully to $email"
-                    ],
-                    200
-                );
-            } catch (\Throwable $th) {
-                return response()->json(
-                    [
-                        'status' => 400,
-                        'operation' =>  'fail',
-                        'message' =>  'Unable to send password reset link'
-                    ],
-                    400
-                );
+                $insert_token = DB::connection('mydb_sqlsrv')
+                    ->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date)
+                 values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
+                if ($insert_token) {
+                    $mailData = [
+                        'token' => $token,
+                        'name' => $name
+                    ];
+                    try {
+                        // Send verification Email with token
+                        Mail::to($email)->send(new PasswordResetMail($mailData));
+                        return response()->json(
+                            [
+                                'status' => 200,
+                                'operation' =>  'success',
+                                'message' =>  "Password reset link for $name sent successfully to $email"
+                            ],
+                            200
+                        );
+                    } catch (\Throwable $th) {
+                        return response()->json(
+                            [
+                                'status' => 400,
+                                'operation' =>  'fail',
+                                'message' =>  'Unable to send password reset link'
+                            ],
+                            400
+                        );
+                    }
+                }
+            } else {
+                return response()->json([
+                    'status' => 400,
+                    'operation' =>  'fail',
+                    'message' =>  'Email not registered.'
+                ], 400);
             }
+        } else if(is_numeric($email)) {
+            $token = openssl_random_pseudo_bytes(16);
+            //Convert the binary data into hexadecimal representation.
+            $token = bin2hex($token);
+
+            $sql_user = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM sys_users_tb where user_phone = '$email'");
+            if ($sql_user) {
+                $user = $sql_user[0];
+                $name = $user->user_full_names;
+                $user_id = $user->user_id;
+                $datecreated = date('Y-m-d H:i:s');
+                $expirydate = date('Y-m-d H:i:s', strtotime($datecreated . ' + 1 days'));
+
+                $insert_token = DB::connection('mydb_sqlsrv')
+                    ->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date)
+                 values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
+                if ($insert_token) {
+                    $string1 = (string)$token;
+                    $parameters = [
+                        'message'   => "Hello  $name,  Use the OTP below to reset your password in to the system $string1.", // the actual message
+                        'sender_id' => 'OCTAGON', // please always maintain capital letters. possible value: OCTAGON, IPM, MOBIKEZA
+                        'recipient' => $email, // always begin with country code. Let us know any country you need us to enable.
+                        'type'      => 'plain', // possible value: plain, mms, voice, whatsapp, default plain
+                    ];
+                    try {
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, 'https://sms.octagonafrica.com/api/v3/sms/send');
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($parameters));
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                            'Authorization: Bearer 9|b2F8SetSBpEQQkmWgHF2uzb8S6ooN0Y8iQpJBy7V', //will be specific to each application we are building internally. Current token will be disabled after test.
+                            'Content-Type: application/json',
+                            'Accept: application/json',
+                        ]);
+
+                        $get_sms_status = curl_exec($ch);
+
+                        if (curl_errno($ch)) {
+                            $get_sms_status = curl_error($ch);
+                        }
+
+                        curl_close($ch);
+
+                        return response()->json(
+                            [
+                                'status' => 200,
+                                'operation' =>  'success',
+                                'message' =>  "Password reset code  sent successfully",
+                                'sms status' => $get_sms_status
+                            ],
+                            200
+                        );
+                    } catch (\Throwable $th) {
+                        return response()->json(
+                            [
+                                'status' => 400,
+                                'operation' =>  'fail',
+                                'message' =>  'Unable to send password reset code'
+                            ],
+                            400
+                        );
+                    }
+                }
+            } else {
+                return response()->json([
+                    'status' => 400,
+                    'operation' =>  'fail',
+                    'message' =>  'Phone not registered.'
+                ], 400);
+            }
+        } else {
+            return response()->json([
+                'status' => 400,
+                'operation' =>  'fail',
+                'message' =>  'Enter a valid Email/phone number.'
+            ], 400);
         }
     }
 
@@ -82,7 +173,8 @@ class ResetPasswordController extends Controller
         $check_code = DB::connection('mydb_sqlsrv')->select("SELECT * FROM tokens where token_key = '$code'");
 
         if (count($check_code) > 0) {
-            $code_expiry = DB::connection('mydb_sqlsrv')->select("SELECT TOP 1 * FROM tokens where token_key = '$code' AND (DATEDIFF(second, expire_date, GETDATE()) / 3600.0)<=24");
+            $code_expiry = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM tokens where token_key = '$code' AND (DATEDIFF(second, expire_date, GETDATE()) / 3600.0)<=24");
             if (count($code_expiry)) {
                 $data = $code_expiry[0];
                 $userid = $data->user_id;
@@ -149,13 +241,13 @@ class ResetPasswordController extends Controller
                 );
             } else {
                 return response()->json(
-                [
-                    'status' => 404,
-                    'success' => false,
-                    'message' => 'User Not Found.'
-                ],
-                404
-            );   
+                    [
+                        'status' => 404,
+                        'success' => false,
+                        'message' => 'User Not Found.'
+                    ],
+                    404
+                );
             }
         } catch (\Throwable $th) {
             return response()->json(
