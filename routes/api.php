@@ -34,3 +34,5 @@ Route::put('/update_password', [ResetPasswordController::class, 'updatePassword'
 Route::get('/claims', [ClaimsController::class, 'getClaims']);
 Route::get('/claims/client', [ClaimsController::class, 'clientClaims']);
 Route::get('/accounts', [AccountsController::class, 'accounts']);
+Route::get('/accounts/insurance/{id}', [AccountsController::class, 'individualInsuranceAccount']);
+Route::get('/accounts/pension/{id}', [AccountsController::class, 'individualPensionAccount']);
