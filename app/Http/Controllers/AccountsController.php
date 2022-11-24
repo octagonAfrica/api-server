@@ -27,10 +27,10 @@ class AccountsController extends Controller
             from Clients C join InsuredItems I on C.ClientID = I.ClientID where C.UserID = '$user_id'");
             
                $insurance_payload = [ 
-                'total_accounts' => count($insurance), 'data' => (object)$insurance,
+                'total_accounts' => count($insurance), 'data' => array_values($insurance),
                 ];
                 $pension_payload = [
-                    'total_accounts' => count($pension), 'data' => (object)$pension
+                    'total_accounts' => count($pension), 'data' => array_values($pension)
                 ];
                 $payload = response()->json([
                     'status' => 200,
