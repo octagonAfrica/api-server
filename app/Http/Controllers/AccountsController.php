@@ -57,7 +57,7 @@ class AccountsController extends Controller
             return response()->json([
                 'status' => 400,
                 'success' => false,
-                'message' => 'code and national ID required'
+                'message' => 'code and user ID required'
             ], 400);
         } else {
             try {
@@ -96,7 +96,7 @@ class AccountsController extends Controller
             return response()->json([
                 'status' => 400,
                 'success' => false,
-                'message' => 'code and national ID required'
+                'message' => 'code and user ID required'
             ], 400);
         } else {
             try {
@@ -135,7 +135,7 @@ class AccountsController extends Controller
             return response()->json([
                 'status' => 400,
                 'success' => false,
-                'message' => 'code and national ID required'
+                'message' => 'code and user ID required'
             ], 400);
         } else {
             try {
