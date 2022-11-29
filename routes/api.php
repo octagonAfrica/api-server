@@ -38,3 +38,4 @@ Route::get('/accounts/insurance/ipp', [AccountsController::class, 'individualIpp
 Route::get('/accounts/insurance/easy_cover', [AccountsController::class, 'individualEasyCoverAccount']);
 Route::get('/accounts/insurance/motor', [AccountsController::class, 'individualMotorAccount']);
 Route::get('/accounts/pension', [AccountsController::class, 'individualPensionAccount']);
+Route::get('/accounts/pension/contributions', [AccountsController::class, 'individualPensionAccountContributions']);
