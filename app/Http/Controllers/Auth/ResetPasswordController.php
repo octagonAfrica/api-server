@@ -14,11 +14,12 @@ class ResetPasswordController extends Controller
     public function resetPassword(Request $request)
     {
         $email = $request['email'];
+        // $phone = $request['phone'];
         if (!$email || empty($email)) {
             return response()->json([
                 'status' => 400,
                 'operation' =>  'fail',
-                'message' =>  'Email required.'
+                'message' =>  'Email/phone required.'
             ], 400);
         } else if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $token = openssl_random_pseudo_bytes(16);
@@ -49,7 +50,7 @@ class ResetPasswordController extends Controller
                             [
                                 'status' => 200,
                                 'operation' =>  'success',
-                                'message' =>  "Password reset link for $name sent successfully to $email"
+                                'message' =>  "Password reset link sent successfully to $email"
                             ],
                             200
                         );
@@ -71,10 +72,9 @@ class ResetPasswordController extends Controller
                     'message' =>  'Email not registered.'
                 ], 400);
             }
-        } else if(is_numeric($email)) {
-            $token = openssl_random_pseudo_bytes(16);
-            //Convert the binary data into hexadecimal representation.
-            $token = bin2hex($token);
+        } else if (is_numeric($email)) {
+            
+            $token = rand(100000, 999999);
 
             $sql_user = DB::connection('mydb_sqlsrv')
                 ->select("SELECT TOP 1 * FROM sys_users_tb where user_phone = '$email'");
@@ -91,7 +91,7 @@ class ResetPasswordController extends Controller
                 if ($insert_token) {
                     $string1 = (string)$token;
                     $parameters = [
-                        'message'   => "Hello  $name,  Use the OTP below to reset your password in to the system $string1.", // the actual message
+                        'message'   => "Hello  $name,  Use the OTP below to reset your password into the system $string1.", // the actual message
                         'sender_id' => 'OCTAGON', // please always maintain capital letters. possible value: OCTAGON, IPM, MOBIKEZA
                         'recipient' => $email, // always begin with country code. Let us know any country you need us to enable.
                         'type'      => 'plain', // possible value: plain, mms, voice, whatsapp, default plain
@@ -123,8 +123,8 @@ class ResetPasswordController extends Controller
                             [
                                 'status' => 200,
                                 'operation' =>  'success',
-                                'message' =>  "Password reset code  sent successfully",
-                                'sms status' => $get_sms_status
+                                'message' =>  "Password reset code sent successfully to $email",
+                                // 'sms status' => $get_sms_status
                             ],
                             200
                         );
@@ -201,14 +201,14 @@ class ResetPasswordController extends Controller
                 return response()->json([
                     'status' => 404,
                     'operation' =>  'fail',
-                    'message' =>  'Password reset link has expired'
+                    'message' =>  'Password reset link/token has expired'
                 ], 404);
             }
         } else {
             return response()->json([
                 'status' => 404,
                 'operation' =>  'fail',
-                'message' =>  'A record with the code does not exist.'
+                'message' =>  'Invalid Token/link.'
             ], 404);
         }
     }
@@ -222,7 +222,7 @@ class ResetPasswordController extends Controller
             return response()->json([
                 'status' => 400,
                 'success' => false,
-                'message' => 'New Password/user_id  not privded.'
+                'message' => 'New Password/user_id not privded.'
             ], 400);
         }
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -258,6 +258,48 @@ class ResetPasswordController extends Controller
                 ],
                 400
             );
+        }
+    }
+    public function verifyOtp(Request $request)
+    {
+        $code = $request['code'];
+
+        if (empty($code) || !$code) {
+            return response()->json([
+                'status' => 400,
+                'operation' =>  'fail',
+                'message' =>  'Code not provided.'
+            ], 400);
+        }
+
+        $check_code = DB::connection('mydb_sqlsrv')->select("SELECT * FROM tokens where token_key = '$code'");
+
+        if (count($check_code) > 0) {
+            $code_expiry = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM tokens where token_key = '$code' AND (DATEDIFF(second, expire_date, GETDATE()) / 3600.0)<=24");
+            if (count($code_expiry)) {
+                $data = $code_expiry[0];
+                $userid = $data->user_id;
+
+                return response()->json([
+                    'statu' => 200,
+                    'operation' => 'success',
+                    'message' => 'Valid Token',
+                    'user_id' => $userid
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 404,
+                    'operation' => 'fail',
+                    'message' => 'Password reset token has expired'
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'status' => 404,
+                'operation' => 'fail',
+                'message' => 'Invalid Token.'
+            ], 404);
         }
     }
 }

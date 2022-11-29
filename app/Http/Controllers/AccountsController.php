@@ -13,16 +13,18 @@ class AccountsController extends Controller
 
         $user_id = $request['user_id'];
         $id_number = $request['user_national_id'];
-        if (empty($user_id) || empty($id_number) || !$user_id || !$id_number) {
+        $email = $request['user_email'];
+        $phone = $request['user_mobile'];
+        if (!$phone || !$email || !$id_number) {
             return response()->json([
                 'status' => 400,
                 'success' => false,
-                'message' => 'userID and national ID required'
+                'message' => 'Email/Phone/UserID/nationalID required'
             ], 400);
         }
         try {
-            // $trust = DB::connection('mydb_sqlsrv')->select("SELECT t_id,t_code,t_alias_code,t_name       ,t_category
-            // ,t_registration_date,t_phone_no,t_frequency,t_status FROM trust_tb1 WHERE t_phone_no ='+254722731719' AND t_status = 'Active' " );
+            $trust = DB::connection('mydb_sqlsrv')->select("SELECT t_id,t_code as Code,t_alias_code,t_name as Name,t_category as Category
+           ,t_registration_date as dateFrom,t_phone_no,t_frequency,t_status FROM trust_tb1 WHERE t_phone_no ='$phone' AND t_status = 'Active' " );
 
             $pension = DB::connection('mydb_sqlsrv')->select("SELECT m_id as ID,m_number as ClientID,
             m_combined as Code,m_name as Name, 
@@ -31,7 +33,11 @@ class AccountsController extends Controller
             FROM members_tb 
             WHERE m_id_number = '$id_number'");
             $insurance = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
-            from Clients C join InsuredItems I on C.ClientID = I.ClientID where C.UserID = '$user_id'");
+            from Clients C join InsuredItems I on C.ClientID = I.ClientID
+            where C.UserID = '$user_id'  OR 
+            C.Mobile ='$phone' OR
+            C.Email = '$email' OR 
+             C.IDNO = '$id_number'");
 
             $insurance_payload = [
                 'total_accounts' => count($insurance), 'data' => $insurance,
@@ -39,12 +45,16 @@ class AccountsController extends Controller
             $pension_payload = [
                 'total_accounts' => count($pension), 'data' => $pension
             ];
+            $trust_payload = [
+                'total_accounts' => count($trust), 'data' => $trust
+            ];
             $payload = response()->json([
                 'status' => 200,
                 'message' => 'Accounts retrieved Successfully',
-                'total_number_of_accounts' => count($insurance) + count($pension),
+                'total_number_of_accounts' => count($insurance) + count($pension) + count($trust),
                 'insurance' => $insurance_payload,
-                'pension' => $pension_payload
+                'pension' => $pension_payload,
+                'trust' => $trust_payload
             ], 200);
         } catch (\Throwable $th) {
             $payload = response()->json([
