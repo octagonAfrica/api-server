@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterContoller;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Claims\ClaimsController;
 use App\Http\Controllers\AccountsController;
+use App\Http\Controllers\IncomeDrawDownController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -40,3 +41,5 @@ Route::get('/accounts/insurance/easy_cover', [AccountsController::class, 'indivi
 Route::get('/accounts/insurance/motor', [AccountsController::class, 'individualMotorAccount']);
 Route::get('/accounts/pension', [AccountsController::class, 'individualPensionAccount']);
 Route::get('/accounts/pension/contributions', [AccountsController::class, 'individualPensionAccountContributions']);
+
+Route::post('/iddf', [IncomeDrawDownController::class, 'IDDF']);
