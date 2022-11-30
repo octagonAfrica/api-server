@@ -124,7 +124,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 200,
                                     'operation' =>  'success',
-                                    'message' =>  "Password reset link sent successfully to $identifier"
+                                    'message' =>  "OTP sent to $identifier"
                                 ],
                                 200
                             );
@@ -133,7 +133,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 400,
                                     'operation' =>  'fail',
-                                    'message' =>  'Unable to send password reset link'
+                                    'message' =>  'Unable to send OTP'
                                 ],
                                 400
                             );
