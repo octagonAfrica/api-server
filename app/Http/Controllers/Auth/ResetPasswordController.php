@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\PasswordResetMail;
+use App\Mail\PasswordResetMailWithLink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -11,23 +12,20 @@ use League\CommonMark\Extension\CommonMark\Node\Inline\Code;
 
 class ResetPasswordController extends Controller
 {
-    public function resetPassword(Request $request)
+    public function resetPasswordWithLink(Request $request)
     {
         $email = $request['email'];
-        // $phone = $request['phone'];
         if (!$email || empty($email)) {
             return response()->json([
                 'status' => 400,
                 'operation' =>  'fail',
-                'message' =>  'Email/phone/user name required.'
+                'message' =>  'Email required.'
             ], 400);
         } else {
             if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                // $token = openssl_random_pseudo_bytes(16);
+                $token = openssl_random_pseudo_bytes(16);
                 //Convert the binary data into hexadecimal representation.
-                // $token = bin2hex($token);
-
-                $token = rand(100000, 999999);
+                $token = bin2hex($token);
 
                 $sql_user = DB::connection('mydb_sqlsrv')
                     ->select("SELECT TOP 1 * FROM sys_users_tb where user_email = '$email'");
@@ -40,7 +38,7 @@ class ResetPasswordController extends Controller
 
                     $insert_token = DB::connection('mydb_sqlsrv')
                         ->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date)
-                 values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
+             values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
                     if ($insert_token) {
                         $mailData = [
                             'token' => $token,
@@ -48,7 +46,7 @@ class ResetPasswordController extends Controller
                         ];
                         try {
                             // Send verification Email with token
-                            Mail::to($email)->send(new PasswordResetMail($mailData));
+                            Mail::to($email)->send(new PasswordResetMailWithLink($mailData));
                             return response()->json(
                                 [
                                     'status' => 200,
@@ -75,11 +73,84 @@ class ResetPasswordController extends Controller
                         'message' =>  'Email not registered.'
                     ], 400);
                 }
-            } elseif (is_numeric($email)) {
+            } else {
+                return response()->json([
+                    'status' => 400,
+                    'operation' =>  'fail',
+                    'message' =>  'Enter a Valid Email.'
+                ], 400);
+            }
+        }
+    }
+    public function resetPasswordWithOtp(Request $request)
+    {
+        $identifier = $request['identifier'];
+        // $phone = $request['phone'];
+        if (!$identifier || empty($identifier)) {
+            return response()->json([
+                'status' => 400,
+                'operation' =>  'fail',
+                'message' =>  'Email/phone/user name required.'
+            ], 400);
+        } else {
+            if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+                // $token = openssl_random_pseudo_bytes(16);
+                //Convert the binary data into hexadecimal representation.
+                // $token = bin2hex($token);
+
                 $token = rand(100000, 999999);
 
                 $sql_user = DB::connection('mydb_sqlsrv')
-                    ->select("SELECT TOP 1 * FROM sys_users_tb where user_phone = '$email'");
+                    ->select("SELECT TOP 1 * FROM sys_users_tb where user_email = '$identifier'");
+                if ($sql_user) {
+                    $user = $sql_user[0];
+                    $name = $user->user_full_names;
+                    $user_id = $user->user_id;
+                    $datecreated = date('Y-m-d H:i:s');
+                    $expirydate = date('Y-m-d H:i:s', strtotime($datecreated . ' + 1 days'));
+
+                    $insert_token = DB::connection('mydb_sqlsrv')
+                        ->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date)
+                 values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
+                    if ($insert_token) {
+                        $mailData = [
+                            'token' => $token,
+                            'name' => $name
+                        ];
+                        try {
+                            // Send verification Email with token
+                            Mail::to($identifier)->send(new PasswordResetMail($mailData));
+                            return response()->json(
+                                [
+                                    'status' => 200,
+                                    'operation' =>  'success',
+                                    'message' =>  "Password reset link sent successfully to $identifier"
+                                ],
+                                200
+                            );
+                        } catch (\Throwable $th) {
+                            return response()->json(
+                                [
+                                    'status' => 400,
+                                    'operation' =>  'fail',
+                                    'message' =>  'Unable to send password reset link'
+                                ],
+                                400
+                            );
+                        }
+                    }
+                } else {
+                    return response()->json([
+                        'status' => 400,
+                        'operation' =>  'fail',
+                        'message' =>  'Email not registered.'
+                    ], 400);
+                }
+            } elseif (is_numeric($identifier)) {
+                $token = rand(100000, 999999);
+
+                $sql_user = DB::connection('mydb_sqlsrv')
+                    ->select("SELECT TOP 1 * FROM sys_users_tb where user_phone = '$identifier'");
                 if ($sql_user) {
                     $user = $sql_user[0];
                     $name = $user->user_full_names;
@@ -95,7 +166,7 @@ class ResetPasswordController extends Controller
                         $parameters = [
                             'message'   => "Hello  $name,  Use the OTP below to reset your password into the system $string1.", // the actual message
                             'sender_id' => 'OCTAGON', // please always maintain capital letters. possible value: OCTAGON, IPM, MOBIKEZA
-                            'recipient' => $email, // always begin with country code. Let us know any country you need us to enable.
+                            'recipient' => $identifier, // always begin with country code. Let us know any country you need us to enable.
                             'type'      => 'plain', // possible value: plain, mms, voice, whatsapp, default plain
                         ];
                         try {
@@ -125,7 +196,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 200,
                                     'operation' =>  'success',
-                                    'message' =>  "Password reset code sent successfully to $email",
+                                    'message' =>  "Password reset code sent successfully to $identifier",
                                     // 'sms status' => $get_sms_status
                                 ],
                                 200
@@ -151,7 +222,7 @@ class ResetPasswordController extends Controller
             } else {
 
                 $sql_user = DB::connection('mydb_sqlsrv')
-                    ->select("SELECT TOP 1 * FROM sys_users_tb where user_username = '$email'");
+                    ->select("SELECT TOP 1 * FROM sys_users_tb where user_username = '$identifier'");
                 if ($sql_user) {
                     $user = $sql_user[0];
                     $name = $user->user_full_names;
@@ -242,7 +313,7 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 200,
                                         'operation' =>  'success',
-                                        'message' =>  "Password reset link sent successfully to $user_email"
+                                        'message' =>  "Password reset code sent successfully to $user_email"
                                     ],
                                     200
                                 );
@@ -251,14 +322,14 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 400,
                                         'operation' =>  'fail',
-                                        'message' =>  'Unable to send password reset link'
+                                        'message' =>  'Unable to send password reset code'
                                     ],
                                     400
                                 );
                             }
                         }
-                    } 
-                    if(!$phone && $user_email) {
+                    }
+                    if (!$phone && $user_email) {
                         return response()->json([
                             'status' => 200,
                             'operation' =>  'success',

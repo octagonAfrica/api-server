@@ -9,9 +9,9 @@
 <body>
     <p>Hello, {{ $mailData['name'] }}</p>
 
-    <p>You have requested a password change. Please use the OTP below to reset your password,</p>
+    <p>You have requested a password change. Please use the link below to reset your password,</p>
     
-    <p>Token: {{$mailData['token']}}</p>
+    <p>Link: https://cloud.octagonafrica.com/oibl/#/new_password/{{$mailData['token']}}</p>
     
     <p>Regards</p>
 </body>
