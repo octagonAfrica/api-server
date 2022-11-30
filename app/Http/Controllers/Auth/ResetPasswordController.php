@@ -60,7 +60,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 400,
                                     'operation' =>  'fail',
-                                    'message' =>  'Unable to send password reset link'
+                                    'message' =>  'Unable to send reset link'
                                 ],
                                 400
                             );
@@ -90,7 +90,7 @@ class ResetPasswordController extends Controller
             return response()->json([
                 'status' => 400,
                 'operation' =>  'fail',
-                'message' =>  'Email/phone/user name required.'
+                'message' =>  'identifier required.'
             ], 400);
         } else {
             if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
@@ -124,7 +124,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 200,
                                     'operation' =>  'success',
-                                    'message' =>  "Password reset link sent successfully to $identifier"
+                                    'message' =>  "OTP sent to $identifier"
                                 ],
                                 200
                             );
@@ -133,7 +133,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 400,
                                     'operation' =>  'fail',
-                                    'message' =>  'Unable to send password reset link'
+                                    'message' =>  'Unable to send OTP'
                                 ],
                                 400
                             );
@@ -147,6 +147,18 @@ class ResetPasswordController extends Controller
                     ], 400);
                 }
             } elseif (is_numeric($identifier)) {
+                $pattern = "/^(\+254|254|0|7)[1-9]\d{8}$/";
+                if ((preg_match($pattern, $identifier, $matches))) {
+                    if ($matches[1] === "254") {
+                        $new_number = substr($identifier, 3);
+                        $identifier = "0$new_number";
+                    } elseif ($matches[1] === "+254") {
+                        $new_number = substr($identifier, 4);
+                        $identifier = "0$new_number";
+                    } elseif ($matches[1] === "7") {
+                        $identifier = "0$identifier";
+                    }
+                }
                 $token = rand(100000, 999999);
 
                 $sql_user = DB::connection('mydb_sqlsrv')
@@ -163,10 +175,12 @@ class ResetPasswordController extends Controller
                      values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
                     if ($insert_token) {
                         $string1 = (string)$token;
+                        $identifier = substr($identifier, 1);
+                        $new_no = "+254$identifier";
                         $parameters = [
                             'message'   => "Hello  $name,  Use the OTP below to reset your password into the system $string1.", // the actual message
                             'sender_id' => 'OCTAGON', // please always maintain capital letters. possible value: OCTAGON, IPM, MOBIKEZA
-                            'recipient' => $identifier, // always begin with country code. Let us know any country you need us to enable.
+                            'recipient' => $new_no, // alwaynew_nos begin with country code. Let us know any country you need us to enable.
                             'type'      => 'plain', // possible value: plain, mms, voice, whatsapp, default plain
                         ];
                         try {
@@ -196,7 +210,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 200,
                                     'operation' =>  'success',
-                                    'message' =>  "Password reset code sent successfully to $identifier",
+                                    'message' =>  "OTP sent to $new_no",
                                     // 'sms status' => $get_sms_status
                                 ],
                                 200
@@ -206,7 +220,7 @@ class ResetPasswordController extends Controller
                                 [
                                     'status' => 400,
                                     'operation' =>  'fail',
-                                    'message' =>  'Unable to send password reset code'
+                                    'message' =>  'Unable to send OTP'
                                 ],
                                 400
                             );
@@ -233,16 +247,30 @@ class ResetPasswordController extends Controller
                     $expirydate = date('Y-m-d H:i:s', strtotime($datecreated . ' + 1 days'));
                     if ($phone) {
                         $token = rand(100000, 999999);
-
+                        $pattern = "/^(\+254|254|0|7)[1-9]\d{8}$/";
+                        if ((preg_match($pattern, $phone, $matches))) {
+                            if ($matches[1] === "254") {
+                                $new_number = substr($phone, 3);
+                                $phone = "0$new_number";
+                            } elseif ($matches[1] === "+254") {
+                                $new_number = substr($phone, 4);
+                                $phone = "0$new_number";
+                            } elseif ($matches[1] === "7") {
+                                $phone = "0$phone";
+                            }
+                        }
                         $insert_token = DB::connection('mydb_sqlsrv')
                             ->insert('INSERT INTO tokens(token_key,user_id,expire_date,created_date)
                              values (?,?,?,?)', [$token, $user_id, $expirydate, $datecreated]);
                         if ($insert_token) {
                             $string1 = (string)$token;
+
+                            $phone = substr($phone, 1);
+                            $new_no = "+254$phone";
                             $parameters = [
                                 'message'   => "Hello  $name,  Use the OTP below to reset your password into the system $string1.", // the actual message
                                 'sender_id' => 'OCTAGON', // please always maintain capital letters. possible value: OCTAGON, IPM, MOBIKEZA
-                                'recipient' => $phone, // always begin with country code. Let us know any country you need us to enable.
+                                'recipient' => "$new_no", // always begin with country code. Let us know any country you need us to enable.
                                 'type'      => 'plain', // possible value: plain, mms, voice, whatsapp, default plain
                             ];
                             try {
@@ -272,7 +300,7 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 200,
                                         'operation' =>  'success',
-                                        'message' =>  "Password reset code sent successfully to $phone",
+                                        'message' =>  "OTP sent to $new_no",
                                         // 'sms status' => $get_sms_status
                                     ],
                                     200
@@ -282,7 +310,7 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 400,
                                         'operation' =>  'fail',
-                                        'message' =>  'Unable to send password reset code'
+                                        'message' =>  'Unable to send OTP'
                                     ],
                                     400
                                 );
@@ -291,7 +319,7 @@ class ResetPasswordController extends Controller
                             return response()->json([
                                 'status' => 400,
                                 'operation' =>  'fail',
-                                'message' =>  'Internal server Error!! Token not generated.'
+                                'message' =>  'Internal server Error!! OTP not generated.'
                             ], 400);
                         }
                     }
@@ -313,7 +341,7 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 200,
                                         'operation' =>  'success',
-                                        'message' =>  "Password reset code sent successfully to $user_email"
+                                        'message' =>  "OTP sent to $user_email"
                                     ],
                                     200
                                 );
@@ -322,7 +350,7 @@ class ResetPasswordController extends Controller
                                     [
                                         'status' => 400,
                                         'operation' =>  'fail',
-                                        'message' =>  'Unable to send password reset code'
+                                        'message' =>  'Unable to send OTP'
                                     ],
                                     400
                                 );
