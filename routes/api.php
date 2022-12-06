@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Claims\ClaimsController;
 use App\Http\Controllers\AccountsController;
 use App\Http\Controllers\IncomeDrawDownController;
+use App\Http\Controllers\MemberStatementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,8 @@ Route::get('/accounts/insurance/ipp', [AccountsController::class, 'individualIpp
 Route::get('/accounts/insurance/easy_cover', [AccountsController::class, 'individualEasyCoverAccount']);
 Route::get('/accounts/insurance/motor', [AccountsController::class, 'individualMotorAccount']);
 Route::get('/accounts/pension', [AccountsController::class, 'individualPensionAccount']);
-Route::get('/accounts/pension/contributions', [AccountsController::class, 'individualPensionAccountContributions']);
+Route::get('/accounts/pension/periods', [AccountsController::class, 'periods']);
+Route::get('/accounts/pension/transactions', [AccountsController::class, 'individualPensionAccountTransactions']);
+Route::get('/accounts/member_statement',[MemberStatementController::class, 'MemberStatement']);
 
 Route::post('/iddf', [IncomeDrawDownController::class, 'IDDF']);
