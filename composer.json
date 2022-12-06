@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.0.2",
         "aws/aws-sdk-php": "^3.239",
+        "barryvdh/laravel-dompdf": "^2.0",
         "firebase/php-jwt": "^6.3",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^9.19",

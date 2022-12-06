@@ -15,16 +15,35 @@ class AccountsController extends Controller
         $id_number = $request['user_national_id'];
         $email = $request['user_email'];
         $phone = $request['user_mobile'];
-        if (!$phone || !$email || !$id_number) {
+        if (!isset($user_id)) {
             return response()->json([
                 'status' => 400,
                 'success' => false,
                 'message' => 'Email/Phone/UserID/nationalID required'
             ], 400);
         }
+        if (empty($id_number)) {
+            $user_exist = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM sys_users_tb WHERE user_id ='$user_id'");
+            $user = $user_exist[0];
+            $id_number = $user->user_national_id;
+        }
+        if (empty($email)) {
+            $user_exist = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM sys_users_tb WHERE user_id ='$user_id'");
+            $user = $user_exist[0];
+            $email = $user->user_email;
+        }
+        if (empty($phone)) {
+            $user_exist = DB::connection('mydb_sqlsrv')
+                ->select("SELECT TOP 1 * FROM sys_users_tb WHERE user_id ='$user_id'");
+            $user = $user_exist[0];
+            $phone = $user->user_mobile;
+        }
         try {
+
             $trust = DB::connection('mydb_sqlsrv')->select("SELECT t_id,t_code as Code,t_alias_code,t_name as Name,t_category as Category
-           ,t_registration_date as dateFrom,t_phone_no,t_frequency,t_status FROM trust_tb1 WHERE t_phone_no ='$phone' AND t_status = 'Active' " );
+           ,t_registration_date as dateFrom,t_phone_no,t_frequency,t_status FROM trust_tb1 WHERE t_phone_no ='$phone' AND t_status = 'Active' ");
 
             $pension = DB::connection('mydb_sqlsrv')->select("SELECT m_id as ID,m_number as ClientID,
             m_combined as Code,m_name as Name, 
@@ -32,6 +51,7 @@ class AccountsController extends Controller
             m_status_date as dateFrom
             FROM members_tb 
             WHERE m_id_number = '$id_number'");
+
             $insurance = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
             from Clients C join InsuredItems I on C.ClientID = I.ClientID
             where C.UserID = '$user_id'  OR 
@@ -233,10 +253,12 @@ class AccountsController extends Controller
             }
         }
     }
-    public function individualPensionAccountContributions(Request $request)
+    public function individualPensionAccountTransactions(Request $request)
     {
-        $code = $request['code'];
-        if (!$code || empty($code)) {
+        $cont_member_number = $request['ClientID'];
+        $m_id = $request['ID'];
+
+        if (!$cont_member_number || empty($cont_member_number)) {
             return response()->json([
                 'status' => 400,
                 'success' => false,
@@ -244,29 +266,30 @@ class AccountsController extends Controller
             ], 400);
         } else {
             try {
+                $sql = "  SELECT  cont_id, cont_date_paid as Display_date, cont_document as Batch,cont_type as Type, cont_amount as Amount from contributions_tb
+                join members_tb m on cont_member_number = m.m_number
+                 where cont_member_number = '$cont_member_number' AND m.m_id ='$m_id'
+                 order by cont_date_paid desc";
                 $individaul_pension = DB::connection('mydb_sqlsrv')
-                ->select("SELECT  m_name,m_payment_mode,c.cont_id, c.cont_member_number,c.cont_category, c.cont_amount,c.cont_date_paid
-                FROM members_tb join contributions_tb c on m_number=c.cont_member_number
-                where m_combined = '$code'");
+                    ->select($sql);
 
                 $individual_pension_payload = [
-                    'total_contributions' => count($individaul_pension), 'data' => $individaul_pension
+                    'total_transactions' => count($individaul_pension), 'data' => $individaul_pension
                 ];
                 if ($individaul_pension) {
                     return response()->json([
                         'status' => 200,
                         'success' => true,
-                        'message' => 'Contributions successfully retrieved',
+                        'message' => 'Transactions successfully retrieved',
                         "data" => $individual_pension_payload
                     ], 200);
                 } else {
                     return response()->json([
-
-                        'status' => 200,
-                        'success' => true,
-                        'message' => 'No contributions available',
+                        'status' => 400,
+                        'success' => false,
+                        'message' => 'No Transactions available',
                         "data" => $individaul_pension
-                    ], 200);
+                    ], 400);
                 }
             } catch (\Throwable $th) {
                 return response()->json([
@@ -277,4 +300,39 @@ class AccountsController extends Controller
             }
         }
     }
+    public function periods(Request $request)
+    {
+        $m_number = $request['m_number'];
+        if (!$m_number) {
+            return response()->json([
+                'status' => 400,
+                'success' => false,
+                'message' => 'm_number required'
+            ], 400);
+        } else {
+            $sql = "SELECT p.period_id, p.period_name  FROM  members_tb m
+        JOIN scheme_periods_tb p ON m.m_scheme_code = p.period_scheme_code
+        WHERE m.m_number = '$m_number'";
+
+            $periods = DB::connection('mydb_sqlsrv')->select($sql);
+            return response()->json(
+                [
+                    'total_periods' => count($periods),
+                    'data' => $periods
+                ]
+            );
+        }
+    }
 }
+    // SQL to get member statements
+//   select top 1000 c.cont_amount, c.cont_date_paid from scheme_tb s 
+// join scheme_sub_periods_tb p on s.scheme_id = p.scheme_period_id
+// join scheme_periods_tb t on p.scheme_period_id = t.period_id
+// join contributions_tb c on  s.scheme_code = c.cont_scheme_code
+// join members_tb m on m.m_scheme_code = s.scheme_code
+// where m.m_number='TEST3' and t.period_id = '20' and m.m_scheme_code= 'KE003';
+
+    // SQL to get all periods as per memmber no.
+    // select p.period_id, p.period_name  from  members_tb m
+    // join scheme_periods_tb p on m.m_scheme_code = p.period_scheme_code
+	// where m.m_number = 'TEST3'
