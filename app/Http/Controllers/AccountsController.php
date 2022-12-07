@@ -269,19 +269,16 @@ class AccountsController extends Controller
                 $sql = "  SELECT  cont_id, cont_date_paid as Display_date, cont_document as Batch,cont_type as Type, cont_amount as Amount from contributions_tb
                 join members_tb m on cont_member_number = m.m_number
                  where cont_member_number = '$cont_member_number' AND m.m_id ='$m_id'
-                 order by cont_date_paid desc";
+                 order by cont_date_paid desc OFFSET 0 ROWS FETCH NEXT 30 ROWS ONLY";
                 $individaul_pension = DB::connection('mydb_sqlsrv')
                     ->select($sql);
-
-                $individual_pension_payload = [
-                    'total_transactions' => count($individaul_pension), 'data' => $individaul_pension
-                ];
                 if ($individaul_pension) {
                     return response()->json([
                         'status' => 200,
                         'success' => true,
                         'message' => 'Transactions successfully retrieved',
-                        "data" => $individual_pension_payload
+                        'total_transactions' => count($individaul_pension), 
+                        "data" => $individaul_pension
                     ], 200);
                 } else {
                     return response()->json([
@@ -302,7 +299,7 @@ class AccountsController extends Controller
     }
     public function periods(Request $request)
     {
-        $m_number = $request['m_number'];
+        $m_number = $request['ClientID'];
         if (!$m_number) {
             return response()->json([
                 'status' => 400,
@@ -312,7 +309,7 @@ class AccountsController extends Controller
         } else {
             $sql = "SELECT p.period_id, p.period_name  FROM  members_tb m
         JOIN scheme_periods_tb p ON m.m_scheme_code = p.period_scheme_code
-        WHERE m.m_number = '$m_number'";
+        WHERE m.m_number = '$m_number' order by p.period_id desc";
 
             $periods = DB::connection('mydb_sqlsrv')->select($sql);
             return response()->json(
