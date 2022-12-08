@@ -46,10 +46,11 @@ class AccountsController extends Controller
            ,t_registration_date as dateFrom,t_phone_no,t_frequency,t_status FROM trust_tb1 WHERE t_phone_no ='$phone' AND t_status = 'Active' ");
 
             $pension = DB::connection('mydb_sqlsrv')->select("SELECT m_id as ID,m_number as ClientID,
-            m_combined as Code,m_name as Name, 
+            m_combined as Code,m_name as Name, s.scheme_name,
             m_id_number, m_pin, m_payment_mode, 
             m_status_date as dateFrom
             FROM members_tb 
+            JOIN scheme_tb s ON m_scheme_code = s.scheme_code
             WHERE m_id_number = '$id_number'");
 
             $insurance = DB::select("SELECT C.ID,C.ClientID,C.Name,I.Code,I.Description,I.Items, C.sum_assured,C.due_premium,C.dateFrom,C.dateTo
