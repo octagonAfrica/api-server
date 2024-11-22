@@ -33,9 +33,9 @@ class MemberStatement extends Mailable
         $pdf = $this->mailData['pdf'];
         $name = $this->mailData['name'];
         $period = $this->mailData['period'];
+        $pdfData = $this->mailData['pdfData'];
 
-
-        return $this->view('emails.memberStatements')
+       return $this->view('emails.memberStatements', compact('pdfData'))
         ->attachData($pdf->output(), "$name-$period.pdf");
     }
 }

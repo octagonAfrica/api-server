@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +8,7 @@
     <title>Octagon Africa</title>
 </head>
 <body>
-    <p>Hello,</p>
+    <p>Hello, {{ $mailData['name'] }}</p>
 
     <p>Kindly find attached statement for {{ $mailData['period'] }} period.</p>
     

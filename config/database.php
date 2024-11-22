@@ -43,30 +43,53 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
-        'mysql' => [
-            'driver' => 'mysql',
-            'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
+
+	  'mysql' => [
+    'driver' => 'mysql',
+    'url' => env('DATABASE_URL'),
+    'host' => env('DB_HOST', '35.189.76.203'),
+    'port' => env('DB_PORT', '1433'),
+    'database' => env('DB_DATABASE', 'forge'),
+    'username' => env('DB_USERNAME', 'forge'),
+    'password' => env('DB_PASSWORD', ''),
+    'unix_socket' => env('DB_SOCKET', ''),
+    'charset' => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix' => '',
+    'prefix_indexes' => true,
+    'strict' => true,
+    'engine' => null,
+    'options' => extension_loaded('pdo_mysql') ? array_filter([
+        PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+    ]) : [],
+],
+
+          'mydb1' => [
+    'driver' => 'sqlsrv',
+    'host' => env('DB_HOST_MYDB1', '35.189.76.203'),
+    'port' => env('DB_PORT_MYDB1', '1433'),
+    'database' => env('DB_DATABASE_MYDB1', 'forge'),
+    'username' => env('DB_USERNAME_MYDB1', 'forge'),
+    'password' => env('DB_PASSWORD_MYDB1', ''),
+    'charset' => 'utf8',
+    'prefix' => '',
+    'prefix_indexes' => true,
+],            
+'mydb_macros_sqlsrv' => [
+        'driver' => 'sqlsrv',
+        'host' => env('DB_HOST_MYDB_MACROS'),
+        'port' => env('DB_PORT_MYDB_MACROS'),
+        'database' => env('DB_DATABASE_MYDB_MACROS'),
+        'username' => env('DB_USERNAME_MYDB_MACROS'),
+        'password' => env('DB_PASSWORD_MYDB_MACROS'),
+        'charset' => 'utf8',
+        'prefix' => '',
+    ],
 
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
+            'host' => env('DB_HOST', '35.246.5.59'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
@@ -82,7 +105,7 @@ return [
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', 'localhost'),
+            'host' => env('DB_HOST', '35.189.76.203'),
             'port' => env('DB_PORT', '1433'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
@@ -90,15 +113,15 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'encrypt' => env('DB_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
         // Secondary Database
         'mydb_sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST_MYDB', 'localhost'),
+            'host' => env('DB_HOST_MYDB', '35.189.76.203'),
             'port' => env('DB_PORT_MYDB', '1433'),
             'database' => env('DB_DATABASE_MYDB', 'forge'),
             'username' => env('DB_USERNAME_MYDB', 'forge'),
@@ -106,11 +129,12 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'encrypt' => env('DB_ENCRYPT','no'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
+
         ],
 
-    ],
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -165,4 +189,5 @@ return [
 
     ],
 
+]
 ];

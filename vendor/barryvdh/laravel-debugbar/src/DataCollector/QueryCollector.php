@@ -134,7 +134,7 @@ class QueryCollector extends PDOCollector
         $pdo = null;
         try {
             $pdo = $connection->getPdo();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // ignore error for non-pdo laravel drivers
         }
         $bindings = $connection->prepareBindings($bindings);
@@ -392,8 +392,10 @@ class QueryCollector extends PDOCollector
             $this->reflection['viewfinderViews'] = $property;
         }
 
+        $xxh128Exists = in_array('xxh128', hash_algos());
+
         foreach ($property->getValue($finder) as $name => $path) {
-            if (sha1($path) == $hash || md5($path) == $hash) {
+            if (($xxh128Exists && hash('xxh128', 'v2' . $path) == $hash) || sha1('v2' . $path) == $hash) {
                 return $name;
             }
         }
@@ -431,7 +433,14 @@ class QueryCollector extends PDOCollector
         if (file_exists($path)) {
             $path = realpath($path);
         }
-        return str_replace(base_path(), '', $path);
+
+        $basepath = base_path();
+
+        if (! str_starts_with($path, $basepath)) {
+            return $path;
+        }
+
+        return substr($path, strlen($basepath));
     }
 
     /**
@@ -511,6 +520,41 @@ class QueryCollector extends PDOCollector
                         'type' => 'explain',
                     ];
                 }
+            } elseif ($query['driver'] === 'sqlite') {
+                $vmi  = '<table style="margin:-5px -11px !important;width: 100% !important">';
+                $vmi .= "<thead><tr>
+                    <td>Address</td>
+                    <td>Opcode</td>
+                    <td>P1</td>
+                    <td>P2</td>
+                    <td>P3</td>
+                    <td>P4</td>
+                    <td>P5</td>
+                    <td>Comment</td>
+                    </tr></thead>";
+
+                foreach ($query['explain'] as $explain) {
+                    $vmi .= "<tr>
+                        <td>{$explain->addr}</td>
+                        <td>{$explain->opcode}</td>
+                        <td>{$explain->p1}</td>
+                        <td>{$explain->p2}</td>
+                        <td>{$explain->p3}</td>
+                        <td>{$explain->p4}</td>
+                        <td>{$explain->p5}</td>
+                        <td>{$explain->comment}</td>
+                        </tr>";
+                }
+
+                $vmi .= '</table>';
+
+                $statements[] = [
+                    'sql' => " - EXPLAIN:",
+                    'type' => 'explain',
+                    'params' => [
+                        'Virtual Machine Instructions' => $vmi,
+                    ]
+                ];
             } else {
                 foreach ($query['explain'] as $explain) {
                     $statements[] = [
