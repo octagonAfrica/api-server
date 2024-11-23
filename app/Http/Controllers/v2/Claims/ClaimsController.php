@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Claims;
+namespace App\Http\Controllers\v2\Claims;
 
+use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Mail\ClaimsVerificationMail;
 use GuzzleHttp\Client;
@@ -242,13 +243,31 @@ class ClaimsController extends Controller
         $m_reason_for_exit = $request['reasonforExit'];
         $m_amount = $request['amount'];
         $dateOfExit = $request['dateOfExit'];
-        if (!$memberNo || !$memberSchemeCode || !$m_reason_for_exit || !$m_amount || !$dateOfExit) {
+
+        // if (!$memberNo || !$memberSchemeCode || !$m_reason_for_exit || !$m_amount || !$dateOfExit) {
+        //     return response()->json([
+        //         'status' => 404, // details not found
+        //         'operation' => 'fail',
+        //         'message' => 'Member Number/Scheme Code required.',
+        //     ], 404);
+        // } 
+        $validator = Validator::make($request->all(), [
+            'memberNo' => 'required|string',
+            'memberSchemeCode' => 'required|string',
+            'reasonforExit' => 'required|string',
+            'amount' => 'required|numeric',
+            'dateOfExit' => 'required|date',
+        ]);
+        
+        if ($validator->fails()) {
             return response()->json([
-                'status' => 404, // details not found
+                'status' => 422, // Unprocessable Entity
                 'operation' => 'fail',
-                'message' => 'Member Number/Scheme Code required.',
-            ], 404);
-        } else {
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(), // Return validation error messages
+            ], 422);
+        }    
+        else {
             date_default_timezone_set('Africa/Nairobi');
 
             $LogDetails = DB::connection('mydb_sqlsrv')->select("SELECT su.user_username, su.user_full_names, m.m_scheme_code from sys_users_tb su , members_tb m where su.user_national_id= m.m_id_number and m.m_number = '$memberNo' and m.m_scheme_code = '$memberSchemeCode'");
@@ -747,122 +766,6 @@ class ClaimsController extends Controller
         }
     }
 
-    // //  add member to withdrawaltemp table
-    // public function addNewWithdrawal(Request $request)
-    // {
-    //     $memberSchemeCode = $request['memberSchemeCode'];
-    //     $m_number = $request['m_number'];
-    //     $m_name = $request['m_name'];
-    //     $m_dob = $request['m_dob'];
-    //     $m_doe = $request['m_doe'];
-    //     $m_des = $request['m_des'];
-    //     $m_doj = $request['m_doj'];
-    //     $m_lcd = $request['m_lcd'];
-    //     $m_national_id = $request['m_national_id'];
-    //     $m_tax_pin = $request['m_tax_pin'];
-    //     $m_email = $request['m_email'];
-    //     $m_mobile = $request['m_mobile'];
-    //     $m_box_address = $request['m_box_address'];
-    //     $m_physical_address = $request['m_physical_address'];
-    //     $m_next_of_kin = $request['m_next_of_kin'];
-    //     $m_next_of_kin_phone = $request['m_next_of_kin_phone'];
-    //     $m_county = $request['m_county'];
-    //     $m_reason_for_exit = $request['m_reason_for_exit'];
-    //     $m_other_selected = $request['m_other_selected'];
-    //     $m_other_reason = $request['m_other_reason_for_exit'];
-    //     $m_benefit_option_cash = $request['m_benefit_option_cash']; // 0/1
-    //     $m_benefit_option_transfer = $request['m_benefit_option_transfer']; // 0/1
-    //     $m_benefit_option_annuity = $request['m_benefit_option_annuity']; // 0/1
-    //     $m_benefit_option_drawdown = $request['m_benefit_option_drawdown']; // 0/1
-    //     $schemeDetails = DB::connection('mydb_sqlsrv')->select("SELECT TOP (1) * from  scheme_tb where  scheme_code like '%$memberSchemeCode%'");
-    //     $schemeData = $schemeDetails[0];
-    //     $schemeName = $schemeData->scheme_name;
-    //     $schemeCountry = $schemeData->scheme_country;
-    //     $p_hash = Hash::make(time().$memberSchemeCode.$m_number.uniqid());
-    //     $p_date = Carbon::now()->toDateString();
-    //     $p_scheme_code = $memberSchemeCode;
-    //     $p_member_number = $m_number;
-    //     $p_stage = 1;
-    //     $p_scheme_name = $schemeName;
-    //     $p_completed = 0;
-    //     if (!$memberSchemeCode && $m_number && $p_scheme_code) {
-    //         return response()->json([
-    //             'status' => 400,
-    //             'operation' => 'fail',
-    //             'message' => 'Member Number/SchemeCode/  required.',
-    //         ], 400);
-    //     } else {
-    //         $memberDOB = Carbon::createFromFormat('Y-m-d', $m_dob);
-    //         $memberCurrentAge = $memberDOB->diffInYears();
-
-    //         $employer_limit = 100;
-    //         $employee_limit = 100;
-    //         $avc_limit = 100;
-    //         if ($schemeCountry === 'Kenya' && $memberCurrentAge < 50) {
-    //             $employer_limit = 50;
-    //             $employee_limit = 50;
-    //             $avc_limit = 50;
-    //         }
-    //         if ($m_reason_for_exit === 'Ill-Health' or $m_reason_for_exit === 'Death' or $m_reason_for_exit === 'Migration' or in_array($memberSchemeCode, ['KE236', 'KE291', 'KE202']) or in_array($m_number, ['IPP/28171332/21'])) {
-    //             $employer_limit = 100;
-    //             $employee_limit = 100;
-    //             $avc_limit = 100;
-    //         }
-
-    //         // Define the data to be inserted
-    //         $data = [
-    //             'p_hash' => $p_hash,
-    //             'p_date' => $p_date,
-    //             'p_scheme_code' => $p_scheme_code,
-    //             'p_member_number' => $p_member_number,
-    //             'p_stage' => $p_stage,
-    //             'p_scheme_name' => $p_scheme_name,
-    //             'p_completed' => $p_completed,
-    //             'm_name' => $m_name,
-    //             'm_dob' => $m_dob,
-    //             'm_doe' => $m_doe,
-    //             'm_des' => $m_des,
-    //             'm_doj' => $m_doj,
-    //             'm_lcd' => $m_lcd,
-    //             'm_national_id' => $m_national_id,
-    //             'm_tax_pin' => $m_tax_pin,
-    //             'm_email' => $m_email,
-    //             'm_mobile' => $m_mobile,
-    //             'm_box_address' => $m_box_address,
-    //             'm_physical_address' => $m_physical_address,
-    //             'm_next_of_kin' => $m_next_of_kin,
-    //             'm_next_of_kin_phone' => $m_next_of_kin_phone,
-    //             'm_county' => $m_county,
-    //             'm_reason_for_exit' => $m_reason_for_exit,
-    //             'm_other_selected' => $m_other_selected,
-    //             'm_other_reason' => $m_other_reason,
-    //             'm_benefit_option_cash' => $m_benefit_option_cash,
-    //             'm_benefit_option_transfer' => $m_benefit_option_transfer,
-    //             'm_benefit_option_annuity' => $m_benefit_option_annuity,
-    //             'm_benefit_option_drawdown' => $m_benefit_option_drawdown,
-    //         ];
-    //         // Insert the data into the table
-    //         $inserted = DB::connection('mydb_sqlsrv')->table('withdrawal_temp_tb')->insert($data);
-    //         if ($inserted) {
-    //             return response()->json([
-    //                 'status' => 200,
-    //                 'operation' => 'Succces',
-    //                 'message' => 'Member Details Inserted Successfully',
-    //                 'employer_limit' => $employer_limit,
-    //                 'employee_limit' => $employee_limit,
-    //                 'avc_limit' => $avc_limit,
-    //                 'p_hash' => $p_hash,
-    //                 '$schemeCountry' => $schemeCountry,
-    //             ], 200);
-    //         } else {
-    //             return response()->json([
-    //                 'status' => 400,
-    //                 'operation' => 'fail',
-    //                 'message' => 'Claim Insert unSuccessfully',
-    //             ], 400);
-    //         }
-    //     }
-    // }
 
     // get bank deatails
     public function fetchBanks(Request $request)
