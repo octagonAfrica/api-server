@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\v2\Claims;
 
-use Illuminate\Support\Facades\Validator;
+
 use App\Http\Controllers\Controller;
 use App\Mail\ClaimsVerificationMail;
 use GuzzleHttp\Client;
@@ -238,6 +238,7 @@ class ClaimsController extends Controller
     // 411, //member has already posted a claim
     public function addNewClaim(Request $request)
     {
+        
         $memberNo = $request['memberNo'];
         $memberSchemeCode = $request['memberSchemeCode'];
         $m_reason_for_exit = $request['reasonforExit'];
@@ -258,7 +259,7 @@ class ClaimsController extends Controller
             'amount' => 'required|numeric',
             'dateOfExit' => 'required|date',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 422, // Unprocessable Entity
