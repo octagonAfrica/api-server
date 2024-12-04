@@ -30,23 +30,23 @@ class RegisterContoller extends Controller
             'lastname' => 'required',
             // 'ID' => 'required',
            'ID' => [
-        'required',
-        function ($attribute, $value, $fail) {
-            $existsInMembers = DB::connection('mydb_sqlsrv')
-                                 ->table('members_tb') // Check in `members_tb`
-                                 ->where('m_id_number', $value)
-                                 ->exists();
-
-            $existsInUsers = DB::connection('mydb_sqlsrv')
-                               ->table('sys_users_tb') // Check in `users`
-                               ->where('user_national_id', $value)
-                               ->exists();
-
-            if ($existsInMembers || $existsInUsers) {
-                $fail('An account is already registered with this ' . $attribute . '.');
-            }
-        },
-    ],
+            'required',
+                function ($attribute, $value, $fail) {
+                    $existsInMembers = DB::connection('mydb_sqlsrv')
+                                         ->table('members_tb') // Check in `members_tb`
+                                         ->where('m_id_number', $value)
+                                         ->exists();
+                
+                    $existsInUsers = DB::connection('mydb_sqlsrv')
+                                       ->table('sys_users_tb') // Check in `users`
+                                       ->where('user_national_id', $value)
+                                       ->exists();
+                
+                    if ($existsInMembers || $existsInUsers) {
+                        $fail('An account is already registered with this ' . $attribute . '.');
+                    }
+                },
+            ],
             'email' => 'required|email',
             'password' => 'required|min:6',
             'gender' => 'required',
@@ -118,8 +118,7 @@ class RegisterContoller extends Controller
             // Encrypt Password
             $encryptedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-            // insert to sys_users_tb if a user exists in the members_tb
-            //$user_exist_members_tb = DB::connection('mydb_sqlsrv')->select("SELECT TOP 1 * FROM members_tb WHERE m_email  ='$email'");
+     
             $add_user = DB::connection('mydb_sqlsrv')->insert('INSERT INTO sys_users_tb (
                 user_username, user_enc_pwd, user_country, user_active, user_full_names,user_gender, user_email,
                 user_mobile, user_phone, user_national_id, user_role_id, is_email_verified,
@@ -933,17 +932,17 @@ class RegisterContoller extends Controller
         } else {
             $memberNumber = $request->input('memberNumber');
             $schemeCode = $request->input('schemeCode');
-            $logData = DB::connection('mydb_sqlsrv')->select("9'");
-            if (count($logData) < 0) {
+            $logData = DB::connection('mydb_sqlsrv')->select("SELECT TOP (1) * FROM members_tb WHERE m_number ='$memberNumber' AND m_scheme_code='$schemeCode' and m_status = 'Active'");
+	    if (count($logData) === 0) {
                 return response()->json([
                     'status' => 409,
                     'operation' => 'failure',
-                    'message' => 'User Account Not found.',
+                    'message' => 'User Account Not found or member is not active.',
                 ], 409);
             }
-            $logDetails = $logData[0];
-            $audit_username = $logDetails->user_username;
-            $audit_fullnames = $logDetails->user_full_names;
+	    $logDetails = $logData[0];
+            $audit_username = $logDetails->m_name;
+            $audit_fullnames = $logDetails->m_name;
             $audit_date_time = date('Y-m-d H:i:s');
             $audit_scheme_code = $schemeCode;
 
@@ -965,7 +964,7 @@ class RegisterContoller extends Controller
             }
             // do the insert or update
             $memberChanges = DB::connection('mydb_macros_sqlsrv')->select("SELECT TOP (1) * from  member_profile_changes where scheme_code = '$schemeCode' and member_number= '$memberNumber' and posted_status= 0 order by member_submitted_on DESC ");
-            if (count($memberChanges) > 0) {
+	    if (count($memberChanges) > 0) {
                 // update
                 $memberDetails = $memberChanges[0];
                 $profileChangeID = $memberDetails->profile_change_id;
@@ -1016,7 +1015,7 @@ class RegisterContoller extends Controller
                                                     VALUES (?, ?, ?, ?, ?, ?)', [$audit_date_time, $audit_scheme_code, $audit_username, $audit_fullnames, $audit_activity, $audit_description]);
 
                         $subject = 'Member Profile Update';
-                        $email = $logDetails->user_email;
+                        $email = $logDetails->m_email;
                         $mailData = [
                             'name' => $audit_fullnames,
                             'subject' => $subject,
@@ -1051,7 +1050,7 @@ class RegisterContoller extends Controller
                                                     VALUES (?, ?, ?, ?, ?, ?)', [$audit_date_time, $audit_scheme_code, $audit_username, $audit_fullnames, $audit_activity, $audit_description]);
 
                     $subject = 'Member Profile Update';
-                    $email = $logDetails->user_email;
+                    $email = $logDetails->m_email;
                     $mailData = [
                         'name' => $audit_fullnames,
                         'subject' => $subject,
@@ -1130,7 +1129,7 @@ class RegisterContoller extends Controller
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [$schemeCode, $memberNumber, $member_name, $gender, $marital_status, $nationality, $kra_pin, $phon_num, $email_address, $physical_address, $member_submitted_on, $scheme_name, $beneficiary_details, $id_number, $accountName, $accountNo, $branchName, $bankName, $nextOfKinName, $nextOfKinPhone]);
 
                     $subject = 'Member Profile Update';
-                    $email = $logDetails->user_email;
+                    $email = $logDetails->m_email;
                     $mailData = [
                         'name' => $member_name,
                         'subject' => $subject,
